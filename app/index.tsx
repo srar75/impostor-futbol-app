@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { CATEGORIAS } from './data';
-import { Audio } from 'expo-av';
+import { CATEGORIAS } from '../src/data';
 import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
@@ -11,11 +10,6 @@ export default function HomeScreen() {
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Top Mundial');
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-  useEffect(() => {
-    return sound ? () => { sound.unloadAsync(); } : undefined;
-  }, [sound]);
 
   const addPlayer = () => {
     if (playerName.trim() === '') return;
@@ -42,18 +36,11 @@ export default function HomeScreen() {
       Alert.alert('Error', 'Necesitas al menos 3 jugadores');
       return;
     }
-    
-    // Play Whistle Sound
+
+    // Haptic “silbato” (evita errores de red/formatos de audio en iOS)
     try {
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: 'https://actions.google.com/sounds/v1/sports/referee_whistle.ogg' }
-      );
-      setSound(newSound);
-      await newSound.playAsync();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      console.log('Error playing sound', e);
-    }
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {}
 
     router.push({
       pathname: '/game',

@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CATEGORIAS } from './data';
-import { Audio } from 'expo-av';
+import { CATEGORIAS } from '../src/data';
 import * as Haptics from 'expo-haptics';
 
 export default function GameScreen() {
@@ -14,28 +13,17 @@ export default function GameScreen() {
   
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
   
   const [selectedPlayerObj] = useState(() => listaFutbolistas[Math.floor(Math.random() * listaFutbolistas.length)]);
   const [impostorIndex] = useState(() => Math.floor(Math.random() * players.length));
 
   const flipAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    return sound ? () => { sound.unloadAsync(); } : undefined;
-  }, [sound]);
-
   const flipCard = async () => {
     setRevealed(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    
     try {
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: 'https://actions.google.com/sounds/v1/alarms/heartbeat_fast.ogg' }
-      );
-      setSound(newSound);
-      await newSound.playAsync();
-    } catch(e) {}
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    } catch (e) {}
 
     Animated.spring(flipAnim, {
       toValue: 1,
@@ -48,7 +36,6 @@ export default function GameScreen() {
   const nextPlayer = () => {
     setRevealed(false);
     flipAnim.setValue(0);
-    if (sound) sound.stopAsync();
 
     if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex(currentPlayerIndex + 1);
@@ -109,7 +96,7 @@ export default function GameScreen() {
             )}
             <TouchableOpacity style={styles.buttonSecondary} onPress={nextPlayer}>
               <Text style={styles.buttonTextSecondary}>
-                {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Ir a las Preguntas'}
+                {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Ir a Votar'}
               </Text>
             </TouchableOpacity>
           </Animated.View>

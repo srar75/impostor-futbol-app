@@ -1,22 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 
 export default function ResultScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   
-  const players = JSON.parse(params.players as string);
   const impostor = params.impostor as string;
   const futbolista = params.futbolista as string;
   const bandera = params.bandera as string;
   const votes = params.votes ? JSON.parse(params.votes as string) : {};
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-  // Calcular votos
   const voteCounts: Record<string, number> = {};
   Object.values(votes).forEach((votedFor: any) => {
     voteCounts[votedFor] = (voteCounts[votedFor] || 0) + 1;
@@ -24,7 +19,6 @@ export default function ResultScreen() {
 
   let maxVotes = 0;
   let mostVoted: string[] = [];
-  
   Object.entries(voteCounts).forEach(([player, count]) => {
     if (count > maxVotes) {
       maxVotes = count;
@@ -36,30 +30,16 @@ export default function ResultScreen() {
 
   const impostorCaught = mostVoted.includes(impostor) && mostVoted.length === 1;
 
-  useEffect(() => {
-    Haptics.notificationAsync(
-      impostorCaught ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error
-    );
-
-    const playResultSound = async () => {
-      try {
-        const uri = impostorCaught 
-          ? 'https://actions.google.com/sounds/v1/crowds/crowd_cheer.ogg'
-          : 'https://actions.google.com/sounds/v1/crowds/crowd_boo_3.ogg';
-        
-        const { sound: newSound } = await Audio.Sound.createAsync({ uri });
-        setSound(newSound);
-        await newSound.playAsync();
-      } catch (e) {}
-    };
-
-    playResultSound();
-
-    return sound ? () => { sound.unloadAsync(); } : undefined;
-  }, []);
+  React.useEffect(() => {
+    // Haptics en vez de audio para evitar errores de red/formato en iOS
+    try {
+      Haptics.notificationAsync(
+        impostorCaught ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error
+      );
+    } catch (e) {}
+  }, [impostorCaught]);
 
   const playAgain = () => {
-    if (sound) sound.unloadAsync();
     router.push('/');
   };
 
@@ -86,12 +66,18 @@ export default function ResultScreen() {
 
       <View style={styles.votesCard}>
         <Text style={styles.votesTitle}>📊 Resultados de la Votación:</Text>
-        {Object.entries(voteCounts).sort((a, b) => b[1] - a[1]).map(([player, count]) => (
-          <View key={player} style={styles.voteRow}>
-            <Text style={styles.votePlayer}>{player} {mostVoted.includes(player) ? '🎯' : ''}</Text>
-            <Text style={styles.voteCount}>{count} voto(s)</Text>
-          </View>
-        ))}
+        {Object.entries(voteCounts).length === 0 ? (
+          <Text style={styles.noVotes}>No hubo votos registrados.</Text>
+        ) : (
+          Object.entries(voteCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([player, count]) => (
+              <View key={player} style={styles.voteRow}>
+                <Text style={styles.votePlayer}>{player} {mostVoted.includes(player) ? '🎯' : ''}</Text>
+                <Text style={styles.voteCount}>{count} voto(s)</Text>
+              </View>
+            ))
+        )}
       </View>
 
       <TouchableOpacity style={styles.button} onPress={playAgain}>
@@ -116,6 +102,7 @@ const styles = StyleSheet.create({
   impostorName: { fontSize: 28, fontWeight: 'bold', color: '#ff6b6b', textAlign: 'center' },
   votesCard: { backgroundColor: '#1a472a', padding: 20, borderRadius: 15, marginBottom: 30 },
   votesTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 15 },
+  noVotes: { color: '#a8d5ba', fontSize: 16 },
   voteRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#2d7a4a' },
   votePlayer: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   voteCount: { color: '#a8d5ba', fontSize: 16 },
