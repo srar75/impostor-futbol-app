@@ -10,7 +10,6 @@ export default function GameScreen() {
   
   const players = JSON.parse(params.players as string);
   const category = params.category as string;
-  const settings = JSON.parse(params.settings as string);
   const listaFutbolistas = CATEGORIAS[category as keyof typeof CATEGORIAS];
   
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
@@ -18,14 +17,6 @@ export default function GameScreen() {
   
   const [selectedPlayerObj] = useState(() => listaFutbolistas[Math.floor(Math.random() * listaFutbolistas.length)]);
   const [impostorIndex] = useState(() => Math.floor(Math.random() * players.length));
-  
-  // Asignar periodista aleatorio (que no sea el impostor)
-  const [journalistIndex] = useState(() => {
-    if (!settings.enableJournalist || players.length < 4) return -1;
-    let j = Math.floor(Math.random() * players.length);
-    while (j === impostorIndex) j = Math.floor(Math.random() * players.length);
-    return j;
-  });
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -46,20 +37,18 @@ export default function GameScreen() {
       setCurrentPlayerIndex(currentPlayerIndex + 1);
     } else {
       router.push({
-        pathname: '/rounds',
+        pathname: '/voting',
         params: { 
           players: JSON.stringify(players),
-          impostorIndex: impostorIndex.toString(),
+          impostor: players[impostorIndex],
           futbolista: selectedPlayerObj.nombre,
-          bandera: selectedPlayerObj.bandera,
-          settings: params.settings
+          bandera: selectedPlayerObj.bandera
         }
       });
     }
   };
 
   const isImpostor = currentPlayerIndex === impostorIndex;
-  const isJournalist = currentPlayerIndex === journalistIndex;
 
   return (
     <View style={styles.container}>
@@ -69,7 +58,7 @@ export default function GameScreen() {
       <View style={styles.cardContainer}>
         <Animated.View style={[
           styles.card, 
-          revealed ? (isImpostor ? styles.cardImpostor : isJournalist ? styles.cardJournalist : styles.cardNormal) : styles.cardFront,
+          revealed ? (isImpostor ? styles.cardImpostor : styles.cardNormal) : styles.cardFront,
           { opacity: fadeAnim }
         ]}>
           {!revealed ? (
@@ -87,13 +76,6 @@ export default function GameScreen() {
                   <Text style={styles.roleTitle}>🕵️ ERES EL IMPOSTOR</Text>
                   <Text style={styles.roleDescription}>No sabes quién es el futbolista. Disimula y descubre quién es por las preguntas.</Text>
                 </>
-              ) : isJournalist ? (
-                <>
-                  <Text style={styles.roleTitle}>📰 ERES EL PERIODISTA</Text>
-                  <Text style={styles.roleDescription}>Investigaste y descubriste la nacionalidad secreta:</Text>
-                  <Text style={styles.flagText}>{selectedPlayerObj.bandera}</Text>
-                  <Text style={styles.roleDescription}>Ayuda a atrapar al impostor sin delatar el nombre.</Text>
-                </>
               ) : (
                 <>
                   <Text style={styles.roleTitle}>⚽ EL FUTBOLISTA ES:</Text>
@@ -103,7 +85,7 @@ export default function GameScreen() {
               )}
               <TouchableOpacity style={styles.buttonSecondary} onPress={nextPlayer}>
                 <Text style={styles.buttonTextSecondary}>
-                  {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Comenzar Rondas'}
+                  {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Ir a Votar'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -123,14 +105,13 @@ const styles = StyleSheet.create({
   cardFront: { backgroundColor: '#1a472a' },
   cardImpostor: { backgroundColor: '#7a2d2d' },
   cardNormal: { backgroundColor: '#2d7a4a' },
-  cardJournalist: { backgroundColor: '#2d5a7a' }, // Blueish for journalist
   roleContent: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
   instructions: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 10 },
   instructionsSub: { fontSize: 16, color: '#a8d5ba', textAlign: 'center', marginBottom: 40 },
-  roleTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 20 },
+  roleTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 20 },
   flagText: { fontSize: 80, marginBottom: 10 },
   footballerName: { fontSize: 32, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 20 },
-  roleDescription: { fontSize: 16, color: '#fff', textAlign: 'center', lineHeight: 24 },
+  roleDescription: { fontSize: 18, color: '#fff', textAlign: 'center', lineHeight: 26 },
   button: { backgroundColor: '#2d7a4a', padding: 20, borderRadius: 15, width: '100%', alignItems: 'center' },
   buttonSecondary: { backgroundColor: 'rgba(255,255,255,0.2)', padding: 15, borderRadius: 10, width: '100%', alignItems: 'center', marginTop: 20 },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },

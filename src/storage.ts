@@ -1,13 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SETTINGS_KEY = 'impostor_settings_v1';
 const STATS_KEY = 'impostor_stats_v1';
-
-export type Settings = {
-  rounds: number;
-  secondsPerTurn: number;
-  enableJournalist: boolean;
-};
 
 export type PlayerStats = {
   games: number;
@@ -18,29 +11,6 @@ export type PlayerStats = {
 };
 
 export type StatsMap = Record<string, PlayerStats>;
-
-export const defaultSettings: Settings = {
-  rounds: 2,
-  secondsPerTurn: 45,
-  enableJournalist: true,
-};
-
-export async function loadSettings(): Promise<Settings> {
-  try {
-    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
-    return raw ? { ...defaultSettings, ...JSON.parse(raw) } : defaultSettings;
-  } catch {
-    return defaultSettings;
-  }
-}
-
-export async function saveSettings(s: Settings) {
-  try {
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-  } catch (e) {
-    console.error('Failed to save settings', e);
-  }
-}
 
 export async function loadStats(): Promise<StatsMap> {
   try {

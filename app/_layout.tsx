@@ -18,7 +18,6 @@ export default function Layout() {
     >
       <Stack.Screen name="index" options={{ title: 'Inicio', headerShown: false }} />
       <Stack.Screen name="game" options={{ title: 'Revelar Roles', gestureEnabled: false, headerBackVisible: false }} />
-      <Stack.Screen name="rounds" options={{ title: 'Preguntas', gestureEnabled: false, headerBackVisible: false }} />
       <Stack.Screen name="voting" options={{ title: 'Votación', gestureEnabled: false, headerBackVisible: false }} />
       <Stack.Screen name="result" options={{ title: 'Resultado', gestureEnabled: false, headerBackVisible: false }} />
       <Stack.Screen name="stats" options={{ title: 'Estadísticas', presentation: 'modal' }} />
