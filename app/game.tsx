@@ -20,17 +20,22 @@ export default function GameScreen() {
   const flipAnim = useRef(new Animated.Value(0)).current;
 
   const flipCard = async () => {
-    setRevealed(true);
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (e) {}
 
-    Animated.spring(flipAnim, {
-      toValue: 1,
-      friction: 8,
-      tension: 10,
+    Animated.timing(flipAnim, {
+      toValue: 0.5,
+      duration: 150,
       useNativeDriver: true,
-    }).start();
+    }).start(() => {
+      setRevealed(true); 
+      Animated.timing(flipAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
   const nextPlayer = () => {
@@ -54,17 +59,12 @@ export default function GameScreen() {
 
   const isImpostor = currentPlayerIndex === impostorIndex;
 
-  const frontInterpolate = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg']
-  });
-  const backInterpolate = flipAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['180deg', '360deg']
+  const cardInterpolate = flipAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: ['0deg', '90deg', '0deg'] 
   });
 
-  const frontAnimatedStyle = { transform: [{ rotateY: frontInterpolate }] };
-  const backAnimatedStyle = { transform: [{ rotateY: backInterpolate }], position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 };
+  const animatedStyle = { transform: [{ rotateY: cardInterpolate }] };
 
   return (
     <View style={styles.container}>
@@ -72,35 +72,41 @@ export default function GameScreen() {
       <Text style={styles.playerName}>{players[currentPlayerIndex]}</Text>
 
       <View style={styles.cardContainer}>
-        {!revealed ? (
-          <Animated.View style={[styles.card, frontAnimatedStyle]}>
-            <Text style={styles.instructions}>Es tu turno.</Text>
-            <Text style={styles.instructionsSub}>Asegúrate de que nadie más vea tu pantalla.</Text>
-            <TouchableOpacity style={styles.button} onPress={flipCard}>
-              <Text style={styles.buttonText}>Tocar para Revelar Rol</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        ) : (
-          <Animated.View style={[styles.card, isImpostor ? styles.cardImpostor : styles.cardNormal, backAnimatedStyle as any]}>
-            {isImpostor ? (
-              <View style={styles.roleContent}>
-                <Text style={styles.roleTitle}>🕵️ ERES EL IMPOSTOR</Text>
-                <Text style={styles.roleDescription}>No sabes quién es el futbolista. Disimula y descubre quién es por las preguntas.</Text>
-              </View>
-            ) : (
-              <View style={styles.roleContent}>
-                <Text style={styles.roleTitle}>⚽ EL FUTBOLISTA ES:</Text>
-                <Text style={styles.flagText}>{selectedPlayerObj.bandera}</Text>
-                <Text style={styles.footballerName}>{selectedPlayerObj.nombre}</Text>
-              </View>
-            )}
-            <TouchableOpacity style={styles.buttonSecondary} onPress={nextPlayer}>
-              <Text style={styles.buttonTextSecondary}>
-                {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Ir a Votar'}
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
+        <Animated.View style={[
+          styles.card, 
+          revealed ? (isImpostor ? styles.cardImpostor : styles.cardNormal) : styles.cardFront,
+          animatedStyle
+        ]}>
+          {!revealed ? (
+            <View style={styles.roleContent}>
+              <Text style={styles.instructions}>Es tu turno.</Text>
+              <Text style={styles.instructionsSub}>Asegúrate de que nadie más vea tu pantalla.</Text>
+              <TouchableOpacity style={styles.button} onPress={flipCard}>
+                <Text style={styles.buttonText}>Tocar para Revelar Rol</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.roleContent}>
+              {isImpostor ? (
+                <>
+                  <Text style={styles.roleTitle}>🕵️ ERES EL IMPOSTOR</Text>
+                  <Text style={styles.roleDescription}>No sabes quién es el futbolista. Disimula y descubre quién es por las preguntas.</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.roleTitle}>⚽ EL FUTBOLISTA ES:</Text>
+                  <Text style={styles.flagText}>{selectedPlayerObj.bandera}</Text>
+                  <Text style={styles.footballerName}>{selectedPlayerObj.nombre}</Text>
+                </>
+              )}
+              <TouchableOpacity style={styles.buttonSecondary} onPress={nextPlayer}>
+                <Text style={styles.buttonTextSecondary}>
+                  {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Ir a Votar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </Animated.View>
       </View>
     </View>
   );
@@ -111,10 +117,11 @@ const styles = StyleSheet.create({
   playerNumber: { fontSize: 18, color: '#a8d5ba', marginBottom: 10 },
   playerName: { fontSize: 36, fontWeight: 'bold', color: '#fff', marginBottom: 40 },
   cardContainer: { width: '100%', height: 400, alignItems: 'center', justifyContent: 'center' },
-  card: { width: '100%', height: '100%', backgroundColor: '#1a472a', borderRadius: 20, padding: 30, alignItems: 'center', justifyContent: 'center', backfaceVisibility: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 },
+  card: { width: '100%', height: '100%', borderRadius: 20, padding: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 },
+  cardFront: { backgroundColor: '#1a472a' },
   cardImpostor: { backgroundColor: '#7a2d2d' },
   cardNormal: { backgroundColor: '#2d7a4a' },
-  roleContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  roleContent: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
   instructions: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 10 },
   instructionsSub: { fontSize: 16, color: '#a8d5ba', textAlign: 'center', marginBottom: 40 },
   roleTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 20 },
