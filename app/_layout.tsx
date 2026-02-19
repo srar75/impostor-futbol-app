@@ -14,8 +14,8 @@ export default function Layout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Impostor Futbol' }} />
-      <Stack.Screen name="lobby" options={{ title: 'Sala de Espera' }} />
-      <Stack.Screen name="game" options={{ title: 'Partida' }} />
+      <Stack.Screen name="game" options={{ title: 'Revelación de Roles' }} />
+      <Stack.Screen name="voting" options={{ title: 'Votación Final' }} />
       <Stack.Screen name="result" options={{ title: 'Resultado' }} />
     </Stack>
   );
