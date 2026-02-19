@@ -4,21 +4,24 @@ export default function Layout() {
   return (
     <Stack
       screenOptions={{
-        headerLargeTitle: true,
-        headerBackTitleVisible: false,
         headerStyle: {
-          backgroundColor: '#f2f2f7', // iOS default group background
+          backgroundColor: '#0a1f12',
         },
-        headerTintColor: '#007aff', // iOS link blue
+        headerTintColor: '#a8d5ba',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
         contentStyle: {
-          backgroundColor: '#f2f2f7',
+          backgroundColor: '#0d2818',
         }
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Impostor Futbol' }} />
-      <Stack.Screen name="game" options={{ title: 'Roles', presentation: 'modal' }} />
-      <Stack.Screen name="voting" options={{ title: 'Votación', presentation: 'modal', gestureEnabled: false, headerLeft: () => null }} />
-      <Stack.Screen name="result" options={{ title: 'Resultado', presentation: 'fullScreenModal', gestureEnabled: false, headerLeft: () => null }} />
+      <Stack.Screen name="index" options={{ title: 'Inicio', headerShown: false }} />
+      <Stack.Screen name="game" options={{ title: 'Revelar Roles', gestureEnabled: false, headerBackVisible: false }} />
+      <Stack.Screen name="rounds" options={{ title: 'Preguntas', gestureEnabled: false, headerBackVisible: false }} />
+      <Stack.Screen name="voting" options={{ title: 'Votación', gestureEnabled: false, headerBackVisible: false }} />
+      <Stack.Screen name="result" options={{ title: 'Resultado', gestureEnabled: false, headerBackVisible: false }} />
+      <Stack.Screen name="stats" options={{ title: 'Estadísticas', presentation: 'modal' }} />
     </Stack>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CATEGORIAS } from '../src/data';
 import * as Haptics from 'expo-haptics';
@@ -7,8 +7,10 @@ import * as Haptics from 'expo-haptics';
 export default function GameScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
+  
   const players = JSON.parse(params.players as string);
   const category = params.category as string;
+  const settings = JSON.parse(params.settings as string);
   const listaFutbolistas = CATEGORIAS[category as keyof typeof CATEGORIAS];
   
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
@@ -16,36 +18,23 @@ export default function GameScreen() {
   
   const [selectedPlayerObj] = useState(() => listaFutbolistas[Math.floor(Math.random() * listaFutbolistas.length)]);
   const [impostorIndex] = useState(() => Math.floor(Math.random() * players.length));
+  
+  // Asignar periodista aleatorio (que no sea el impostor)
+  const [journalistIndex] = useState(() => {
+    if (!settings.enableJournalist || players.length < 4) return -1;
+    let j = Math.floor(Math.random() * players.length);
+    while (j === impostorIndex) j = Math.floor(Math.random() * players.length);
+    return j;
+  });
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const confirmReveal = () => {
-    Alert.alert(
-      '¿Estás solo?',
-      'Asegúrate de que nadie esté mirando tu pantalla antes de revelar el rol.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Revelar', style: 'destructive', onPress: revealRole }
-      ]
-    );
-  };
-
   const revealRole = async () => {
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    } catch (e) {}
+    try { await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } catch (e) {}
 
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
       setRevealed(true); 
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
     });
   };
 
@@ -57,63 +46,64 @@ export default function GameScreen() {
       setCurrentPlayerIndex(currentPlayerIndex + 1);
     } else {
       router.push({
-        pathname: '/voting',
+        pathname: '/rounds',
         params: { 
           players: JSON.stringify(players),
-          impostor: players[impostorIndex],
+          impostorIndex: impostorIndex.toString(),
           futbolista: selectedPlayerObj.nombre,
-          bandera: selectedPlayerObj.bandera
+          bandera: selectedPlayerObj.bandera,
+          settings: params.settings
         }
       });
     }
   };
 
   const isImpostor = currentPlayerIndex === impostorIndex;
+  const isJournalist = currentPlayerIndex === journalistIndex;
 
   return (
     <View style={styles.container}>
-      
-      <View style={styles.headerArea}>
-        <Text style={styles.turnLabel}>Turno {currentPlayerIndex + 1} de {players.length}</Text>
-        <Text style={styles.playerName}>{players[currentPlayerIndex]}</Text>
-      </View>
+      <Text style={styles.playerNumber}>Turno {currentPlayerIndex + 1} de {players.length}</Text>
+      <Text style={styles.playerName}>{players[currentPlayerIndex]}</Text>
 
       <View style={styles.cardContainer}>
         <Animated.View style={[
-          styles.iosCard, 
-          revealed ? (isImpostor ? styles.cardImpostor : styles.cardNormal) : styles.cardFront,
+          styles.card, 
+          revealed ? (isImpostor ? styles.cardImpostor : isJournalist ? styles.cardJournalist : styles.cardNormal) : styles.cardFront,
           { opacity: fadeAnim }
         ]}>
           {!revealed ? (
             <View style={styles.roleContent}>
-              <View style={styles.iconCircle}>
-                <Text style={styles.iconFace}>👤</Text>
-              </View>
-              <Text style={styles.instructions}>Identidad Oculta</Text>
-              <Text style={styles.instructionsSub}>Toca revelar para ver tu rol</Text>
-              
-              <TouchableOpacity style={styles.primaryBtn} onPress={confirmReveal}>
-                <Text style={styles.primaryBtnText}>Revelar Rol</Text>
+              <Text style={styles.instructions}>Es tu turno.</Text>
+              <Text style={styles.instructionsSub}>Asegúrate de que nadie más vea tu pantalla.</Text>
+              <TouchableOpacity style={styles.button} onPress={revealRole}>
+                <Text style={styles.buttonText}>Tocar para Revelar Rol</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.roleContent}>
               {isImpostor ? (
                 <>
-                  <Text style={styles.impostorEmoji}>🕵️‍♂️</Text>
-                  <Text style={styles.roleTitleImpostor}>ERES EL IMPOSTOR</Text>
-                  <Text style={styles.roleDescription}>No conoces al futbolista. Intenta deducir quién es mediante las preguntas de los demás.</Text>
+                  <Text style={styles.roleTitle}>🕵️ ERES EL IMPOSTOR</Text>
+                  <Text style={styles.roleDescription}>No sabes quién es el futbolista. Disimula y descubre quién es por las preguntas.</Text>
+                </>
+              ) : isJournalist ? (
+                <>
+                  <Text style={styles.roleTitle}>📰 ERES EL PERIODISTA</Text>
+                  <Text style={styles.roleDescription}>Investigaste y descubriste la nacionalidad secreta:</Text>
+                  <Text style={styles.flagText}>{selectedPlayerObj.bandera}</Text>
+                  <Text style={styles.roleDescription}>Ayuda a atrapar al impostor sin delatar el nombre.</Text>
                 </>
               ) : (
                 <>
+                  <Text style={styles.roleTitle}>⚽ EL FUTBOLISTA ES:</Text>
                   <Text style={styles.flagText}>{selectedPlayerObj.bandera}</Text>
-                  <Text style={styles.roleTitlePlayer}>EL FUTBOLISTA ES</Text>
                   <Text style={styles.footballerName}>{selectedPlayerObj.nombre}</Text>
                 </>
               )}
-              <TouchableOpacity style={styles.secondaryBtn} onPress={nextPlayer}>
-                <Text style={[styles.secondaryBtnText, isImpostor ? {color: '#ff3b30'} : {color: '#007aff'}]}>
-                  {currentPlayerIndex < players.length - 1 ? 'Siguiente Jugador' : 'Comenzar a Votar'}
+              <TouchableOpacity style={styles.buttonSecondary} onPress={nextPlayer}>
+                <Text style={styles.buttonTextSecondary}>
+                  {currentPlayerIndex < players.length - 1 ? 'Pasar al siguiente jugador' : 'Comenzar Rondas'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -125,31 +115,24 @@ export default function GameScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f7', padding: 20 },
-  headerArea: { marginTop: 40, marginBottom: 20, alignItems: 'center' },
-  turnLabel: { fontSize: 15, color: '#8e8e93', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  playerName: { fontSize: 34, fontWeight: '700', color: '#000' },
-  cardContainer: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', marginBottom: 40 },
-  iosCard: { width: '100%', height: 450, borderRadius: 24, padding: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 10 },
-  cardFront: { backgroundColor: '#ffffff' },
-  cardImpostor: { backgroundColor: '#ffeaea' }, // Light red for iOS
-  cardNormal: { backgroundColor: '#eef7fe' }, // Light blue for iOS
+  container: { flex: 1, backgroundColor: '#0d2818', padding: 20, alignItems: 'center', justifyContent: 'center' },
+  playerNumber: { fontSize: 18, color: '#a8d5ba', marginBottom: 10 },
+  playerName: { fontSize: 36, fontWeight: 'bold', color: '#fff', marginBottom: 40 },
+  cardContainer: { width: '100%', height: 400, alignItems: 'center', justifyContent: 'center' },
+  card: { width: '100%', height: '100%', borderRadius: 20, padding: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 },
+  cardFront: { backgroundColor: '#1a472a' },
+  cardImpostor: { backgroundColor: '#7a2d2d' },
+  cardNormal: { backgroundColor: '#2d7a4a' },
+  cardJournalist: { backgroundColor: '#2d5a7a' }, // Blueish for journalist
   roleContent: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f2f2f7', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  iconFace: { fontSize: 40 },
-  instructions: { fontSize: 22, fontWeight: '600', color: '#000', textAlign: 'center', marginBottom: 8 },
-  instructionsSub: { fontSize: 16, color: '#8e8e93', textAlign: 'center', marginBottom: 40 },
-  
-  impostorEmoji: { fontSize: 80, marginBottom: 20 },
-  roleTitleImpostor: { fontSize: 20, fontWeight: '700', color: '#ff3b30', textAlign: 'center', marginBottom: 16, letterSpacing: 1 },
-  roleDescription: { fontSize: 17, color: '#333333', textAlign: 'center', lineHeight: 24 },
-  
-  flagText: { fontSize: 100, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-  roleTitlePlayer: { fontSize: 15, fontWeight: '600', color: '#8e8e93', textAlign: 'center', marginBottom: 8, letterSpacing: 1 },
-  footballerName: { fontSize: 34, fontWeight: '800', color: '#000', textAlign: 'center', marginBottom: 20 },
-  
-  primaryBtn: { backgroundColor: '#007aff', borderRadius: 14, paddingVertical: 16, width: '100%', alignItems: 'center' },
-  primaryBtnText: { color: '#ffffff', fontSize: 17, fontWeight: '600' },
-  secondaryBtn: { backgroundColor: '#ffffff', borderRadius: 14, paddingVertical: 16, width: '100%', alignItems: 'center', marginTop: 'auto', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
-  secondaryBtnText: { fontSize: 17, fontWeight: '600' }
+  instructions: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 10 },
+  instructionsSub: { fontSize: 16, color: '#a8d5ba', textAlign: 'center', marginBottom: 40 },
+  roleTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 20 },
+  flagText: { fontSize: 80, marginBottom: 10 },
+  footballerName: { fontSize: 32, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 20 },
+  roleDescription: { fontSize: 16, color: '#fff', textAlign: 'center', lineHeight: 24 },
+  button: { backgroundColor: '#2d7a4a', padding: 20, borderRadius: 15, width: '100%', alignItems: 'center' },
+  buttonSecondary: { backgroundColor: 'rgba(255,255,255,0.2)', padding: 15, borderRadius: 10, width: '100%', alignItems: 'center', marginTop: 20 },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  buttonTextSecondary: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });

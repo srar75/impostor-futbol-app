@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { applyGameResult } from '../src/storage';
 
 export default function ResultScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   
+  const players = JSON.parse(params.players as string);
   const impostor = params.impostor as string;
   const futbolista = params.futbolista as string;
   const bandera = params.bandera as string;
@@ -30,18 +32,16 @@ export default function ResultScreen() {
 
   const impostorCaught = mostVoted.includes(impostor) && mostVoted.length === 1;
 
-  React.useEffect(() => {
-    // Haptics en vez de audio para evitar errores de red/formato en iOS
+  useEffect(() => {
     try {
       Haptics.notificationAsync(
         impostorCaught ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error
       );
     } catch (e) {}
-  }, [impostorCaught]);
 
-  const playAgain = () => {
-    router.push('/');
-  };
+    // Guardar estadísticas localmente
+    applyGameResult(players, impostor, impostorCaught);
+  }, []);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -80,9 +80,15 @@ export default function ResultScreen() {
         )}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={playAgain}>
-        <Text style={styles.buttonText}>Jugar de Nuevo</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.buttonSecondary} onPress={() => router.push('/stats')}>
+          <Text style={styles.buttonText}>Estadísticas</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.buttonPrimary} onPress={() => router.push('/')}>
+          <Text style={styles.buttonText}>Jugar de Nuevo</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -106,6 +112,8 @@ const styles = StyleSheet.create({
   voteRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#2d7a4a' },
   votePlayer: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   voteCount: { color: '#a8d5ba', fontSize: 16 },
-  button: { backgroundColor: '#4caf50', padding: 18, borderRadius: 10, alignItems: 'center', marginBottom: 30 },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
+  buttonSecondary: { backgroundColor: '#1a472a', padding: 18, borderRadius: 10, alignItems: 'center', flex: 0.48 },
+  buttonPrimary: { backgroundColor: '#4caf50', padding: 18, borderRadius: 10, alignItems: 'center', flex: 0.48 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });
