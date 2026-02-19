@@ -168,7 +168,7 @@ export default function HomeScreen() {
           >
             <Text style={styles.startButtonText}>Iniciar Partida</Text>
           </TouchableOpacity>
-        </</>
+        </>
       )}
     </View>
   );
