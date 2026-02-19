@@ -17,22 +17,24 @@ export default function GameScreen() {
   const [selectedPlayerObj] = useState(() => listaFutbolistas[Math.floor(Math.random() * listaFutbolistas.length)]);
   const [impostorIndex] = useState(() => Math.floor(Math.random() * players.length));
 
-  const flipAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const flipCard = async () => {
+  const revealRole = async () => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (e) {}
 
-    Animated.timing(flipAnim, {
-      toValue: 0.5,
+    // Fade Out
+    Animated.timing(fadeAnim, {
+      toValue: 0,
       duration: 150,
       useNativeDriver: true,
     }).start(() => {
       setRevealed(true); 
-      Animated.timing(flipAnim, {
+      // Fade In
+      Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 150,
+        duration: 200,
         useNativeDriver: true,
       }).start();
     });
@@ -40,7 +42,7 @@ export default function GameScreen() {
 
   const nextPlayer = () => {
     setRevealed(false);
-    flipAnim.setValue(0);
+    fadeAnim.setValue(1);
 
     if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex(currentPlayerIndex + 1);
@@ -59,13 +61,6 @@ export default function GameScreen() {
 
   const isImpostor = currentPlayerIndex === impostorIndex;
 
-  const cardInterpolate = flipAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['0deg', '90deg', '0deg'] 
-  });
-
-  const animatedStyle = { transform: [{ rotateY: cardInterpolate }] };
-
   return (
     <View style={styles.container}>
       <Text style={styles.playerNumber}>Turno {currentPlayerIndex + 1} de {players.length}</Text>
@@ -75,13 +70,13 @@ export default function GameScreen() {
         <Animated.View style={[
           styles.card, 
           revealed ? (isImpostor ? styles.cardImpostor : styles.cardNormal) : styles.cardFront,
-          animatedStyle
+          { opacity: fadeAnim }
         ]}>
           {!revealed ? (
             <View style={styles.roleContent}>
               <Text style={styles.instructions}>Es tu turno.</Text>
               <Text style={styles.instructionsSub}>Asegúrate de que nadie más vea tu pantalla.</Text>
-              <TouchableOpacity style={styles.button} onPress={flipCard}>
+              <TouchableOpacity style={styles.button} onPress={revealRole}>
                 <Text style={styles.buttonText}>Tocar para Revelar Rol</Text>
               </TouchableOpacity>
             </View>
