@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { CATEGORIAS } from '../src/data';
 import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Top Mundial');
+
+  // Si venimos de la pantalla de resultados, restaurar los jugadores
+  useEffect(() => {
+    if (params.lastPlayers) {
+      try {
+        const last = JSON.parse(params.lastPlayers as string);
+        if (Array.isArray(last) && last.length > 0) {
+          setPlayers(last);
+        }
+      } catch (e) {}
+    }
+  }, [params.lastPlayers]);
 
   const addPlayer = () => {
     if (playerName.trim() === '') return;

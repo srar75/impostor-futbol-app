@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -85,7 +85,10 @@ export default function ResultScreen() {
           <Text style={styles.buttonText}>Estadísticas</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.buttonPrimary} onPress={() => router.push('/')}>
+        <TouchableOpacity 
+          style={styles.buttonPrimary} 
+          onPress={() => router.push({ pathname: '/', params: { lastPlayers: JSON.stringify(players) } })}
+        >
           <Text style={styles.buttonText}>Jugar de Nuevo</Text>
         </TouchableOpacity>
       </View>
